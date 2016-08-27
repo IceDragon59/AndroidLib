@@ -3,7 +3,9 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace RegawMOD.Android
 {
@@ -45,7 +47,7 @@ namespace RegawMOD.Android
     /// </summary>
     public class FileSystem
     {
-        private Device device;
+        private readonly Device device;
 
         private MountInfo systemMount;
 
@@ -164,7 +166,7 @@ namespace RegawMOD.Android
 
             if (this.systemMount.MountType == type)
                 return true;
-            
+
             return false;
         }
 
@@ -192,6 +194,44 @@ namespace RegawMOD.Android
                 return ListingType.DIRECTORY;
 
             return ListingType.NONE;
+        }
+
+        /// <summary>
+        /// Gets a <see cref="Dictionary<string, ListingType>"/> containing all the files and folders in the directory added as a parameter.
+        /// </summary>
+        /// <param name="rootDir">
+        /// The directory you'd like to list the files and folders from.
+        /// E.G.: /system/bin/
+        /// </param>
+        /// <returns>See <see cref="Dictionary"/></returns>
+        public Dictionary<string, ListingType> GetFilesAndDirectories(string location)
+        {
+            if (location == null || string.IsNullOrEmpty(location) || Regex.IsMatch(location, @"\s"))
+                throw new ArgumentException("rootDir must not be null or empty!");
+
+            Dictionary<string, ListingType> filesAndDirs = new Dictionary<string, ListingType>();
+            AdbCommand cmd = null;
+
+            if (device.BusyBox.IsInstalled)
+                cmd = Adb.FormAdbShellCommand(device, true, "busybox", "ls", "-a", "-p", "-l", location);
+            else
+                cmd = Adb.FormAdbShellCommand(device, true, "ls", "-a", "-p", "-l", location);
+
+            using (StringReader reader = new StringReader(Adb.ExecuteAdbCommand(cmd)))
+            {
+                string line = null;
+                while (reader.Peek() != -1)
+                {
+                    line = reader.ReadLine();
+                    if (!string.IsNullOrEmpty(line) && !Regex.IsMatch(line, @"\s"))
+                    {
+                        filesAndDirs.Add(line, line.EndsWith("/") ? ListingType.DIRECTORY : ListingType.FILE);
+                    }
+                }
+            }
+
+
+            return filesAndDirs;
         }
     }
 }

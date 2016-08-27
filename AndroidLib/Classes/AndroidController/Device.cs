@@ -74,6 +74,10 @@ namespace RegawMOD.Android
                     return DeviceState.RECOVERY;
                 case "fastboot":
                     return DeviceState.FASTBOOT;
+                case "sideload":
+                    return DeviceState.SIDELOAD;
+                case "unauthorized":
+                    return DeviceState.UNAUTHORIZED;
                 default:
                     return DeviceState.UNKNOWN;
             }
